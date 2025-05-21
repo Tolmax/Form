@@ -2,6 +2,38 @@ import React, { useState, useRef } from "react";
 import * as yup from "yup";
 import styles from "./App.module.css";
 
+// Схемы валидации
+const emailSchema = yup
+	.string()
+	.matches(
+		/^\w+@\w+\.\w{2,}$/,
+		"Допустимые символы: буквы, цифры и нижнее подчеркивание. Формат: user@example.com",
+	)
+	.required("Почта обязательна для заполнения");
+
+const passwordSchema = yup
+	.string()
+	.matches(
+		/^[a-zA-Zа-яА-ЯёЁ0-9_]*$/,
+		"Допустимые символы: буквы, цифры и нижнее подчеркивание.",
+	)
+	.min(3, "Должно быть не меньше 3 символов")
+	.required("Пароль обязателен для заполнения");
+
+const repeatPassSchema = yup
+	.string()
+	.required("Повторите пароль")
+	.test("passwords-match", "Пароли не совпадают", function (value) {
+		return value === this.options.context?.password;
+	});
+
+// Общая схема для валидации формы
+const validationSchema = yup.object().shape({
+	email: emailSchema,
+	password: passwordSchema,
+	repeatPass: repeatPassSchema,
+});
+
 function App() {
 	const [email, setEmail] = useState("");
 	const [emailError, setEmailError] = useState(null);
@@ -12,59 +44,81 @@ function App() {
 
 	const submitButtonRef = useRef(null);
 
-	const onEmailChange = ({ target }) => {
-		setEmail(target.value);
-		let error = null;
-		if (!/^\w+@\w+\.\w{2,}$/.test(target.value)) {
-			error =
-				"Неверный адрес почты. Допустимые символы: буквы, цифры и нижнее подчеркивание. Формат: user@example.com";
+	const onEmailChange = async ({ target }) => {
+		const value = target.value;
+		setEmail(value);
+
+		try {
+			await emailSchema.validate(value);
+			setEmailError(null);
+		} catch (error) {
+			setEmailError(error.message);
 		}
-		setEmailError(error);
 	};
 
-	const onPasswordChange = ({ target }) => {
-		setPassword(target.value);
-		let error = null;
-		if (!/^[a-zA-Zа-яА-ЯёЁ0-9_]*$/.test(target.value)) {
-			error = "Допустимые символы: буквы, цифры и нижнее подчеркивание.";
-		} else if (target.value.length < 3) {
-			error = "Неверный логин. Должно быть не меньше 3 символов";
+	const onPasswordChange = async ({ target }) => {
+		const value = target.value;
+		setPassword(value);
+
+		try {
+			await passwordSchema.validate(value);
+			setPasswordError(null);
+		} catch (error) {
+			setPasswordError(error.message);
 		}
-		setPasswordError(error);
 	};
 
-	const onRepeatPassChange = ({ target }) => {
-		const newRepeatPass = target.value;
-		setRepeatPass(target.value);
-		let error = null;
-		if (newRepeatPass !== password) {
-			error = "Пароли не совпадают";
-		} else {
-			// Проверяем условия с УЧЕТОМ ТЕКУЩЕГО ВВОДА (newRepeatPass вместо repeatPass)
-			const isFormValid =
-				email &&
-				!emailError &&
-				password &&
-				!passwordError &&
-				newRepeatPass &&
-				password === newRepeatPass;
+	const onRepeatPassChange = async ({ target }) => {
+		const value = target.value;
+		setRepeatPass(value);
 
-			// Добавляем задержку для обновления DOM
-			if (isFormValid && submitButtonRef.current) {
-				setTimeout(() => {
-					submitButtonRef.current.focus();
-				}, 10);
-			}
+		try {
+			await repeatPassSchema.validate(value, { context: { password } });
+			setRepeatPassError(null);
+		} catch (error) {
+			setRepeatPassError(error.message);
 		}
-		setRepeatPassError(error);
+
+		// Автофокус на кнопку при успешном заполнении
+		const isFormValid =
+			email &&
+			!emailError &&
+			password &&
+			!passwordError &&
+			value &&
+			value === password;
+
+		if (isFormValid && submitButtonRef.current) {
+			setTimeout(() => submitButtonRef.current.focus(), 10);
+		}
 	};
 
-	const onSubmit = (event) => {
+	const onSubmit = async (event) => {
 		event.preventDefault();
-		console.log({ email, password, repeatPass });
-		setEmail("");
-		setPassword("");
-		setRepeatPass("");
+
+		try {
+			await validationSchema.validate(
+				{ email, password, repeatPass },
+				{ abortEarly: false },
+			);
+
+			console.log("Форма отправлена:", { email, password, repeatPass });
+			// Сброс формы
+			setEmail("");
+			setPassword("");
+			setRepeatPass("");
+			setEmailError(null);
+			setPasswordError(null);
+			setRepeatPassError(null);
+		} catch (errors) {
+			const errorMessages = {};
+			errors.inner.forEach((error) => {
+				errorMessages[error.path] = error.message;
+			});
+			setEmailError(errorMessages.email);
+			setPasswordError(errorMessages.password);
+			setRepeatPassError(errorMessages.repeatPass);
+		}
 	};
 
 	return (
@@ -93,6 +147,7 @@ function App() {
 				{passwordError && (
 					<span className={styles.error}>{passwordError}</span>
 				)}
+
 				<input
 					type="password"
 					name="repeatPass"
@@ -104,18 +159,18 @@ function App() {
 				{repeatPassError && (
 					<span className={styles.error}>{repeatPassError}</span>
 				)}
+
 				<button
 					ref={submitButtonRef}
 					type="submit"
 					className={styles.button}
 					disabled={
-						emailError !== null ||
-						passwordError !== null ||
-						repeatPassError !== null ||
+						!!emailError ||
+						!!passwordError ||
+						!!repeatPassError ||
 						!email ||
 						!password ||
-						!repeatPass ||
-						password !== repeatPass
+						!repeatPass
 					}
 				>
 					Зарегистрироваться

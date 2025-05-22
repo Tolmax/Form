@@ -7,23 +7,23 @@ import styles from "./App.module.css";
 const schema = yup.object().shape({
 	email: yup
 		.string()
+		.required("Почта обязательна для заполнения")
 		.matches(
 			/^\w+@\w+\.\w{2,}$/,
 			"Допустимые символы: буквы, цифры и нижнее подчеркивание. Формат: user@example.com",
-		)
-		.required("Почта обязательна для заполнения"),
+		),
 	password: yup
 		.string()
+		.required("Пароль обязателен для заполнения")
 		.matches(
 			/^[a-zA-Zа-яА-ЯёЁ0-9_]*$/,
 			"Допустимые символы: буквы, цифры и нижнее подчеркивание.",
 		)
-		.min(3, "Должно быть не меньше 3 символов")
-		.required("Пароль обязателен для заполнения"),
+		.min(3, "Должно быть не меньше 3 символов"),
 	repeatPass: yup
 		.string()
-		.oneOf([yup.ref("password")], "Пароли не совпадают")
-		.required("Повторите пароль"),
+		.required("Повторите пароль")
+		.oneOf([yup.ref("password")], "Пароли не совпадают"),
 });
 
 function App() {

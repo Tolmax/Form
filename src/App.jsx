@@ -1,8 +1,9 @@
-import React, { useRef } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import styles from "./App.module.css";
+import { EyeIcon } from "./ShowButton/ShowButton";
 
 const schema = yup.object().shape({
 	email: yup
@@ -27,6 +28,8 @@ const schema = yup.object().shape({
 });
 
 function App() {
+	const [showPassword, setShowPassword] = useState(false);
+	const [showRepeatPass, setShowRepeatPass] = useState(false);
 	const {
 		register,
 		handleSubmit,
@@ -68,27 +71,37 @@ function App() {
 				{errors.email && (
 					<span className={styles.error}>{errors.email.message}</span>
 				)}
-
-				<input
-					type="password"
-					{...register("password")}
-					placeholder="Пароль"
-					className={styles.input}
-					onKeyUp={checkAutoFocus}
-				/>
+				<div className={styles.inputWrapper}>
+					<input
+						type={showPassword ? "text" : "password"}
+						{...register("password")}
+						placeholder="Пароль"
+						className={styles.input}
+						onKeyUp={checkAutoFocus}
+					/>
+					<EyeIcon
+						show={setShowPassword}
+						onClick={() => setShowPassword(!showPassword)}
+					/>
+				</div>
 				{errors.password && (
 					<span className={styles.error}>
 						{errors.password.message}
 					</span>
 				)}
-
-				<input
-					type="password"
-					{...register("repeatPass")}
-					placeholder="Повторить пароль"
-					className={styles.input}
-					onKeyUp={checkAutoFocus}
-				/>
+				<div className={styles.inputWrapper}>
+					<input
+						type={showRepeatPass ? "text" : "password"}
+						{...register("repeatPass")}
+						placeholder="Повторить пароль"
+						className={styles.input}
+						onKeyUp={checkAutoFocus}
+					/>
+					<EyeIcon
+						show={showRepeatPass}
+						onClick={() => setShowRepeatPass(!showRepeatPass)}
+					/>
+				</div>
 				{errors.repeatPass && (
 					<span className={styles.error}>
 						{errors.repeatPass.message}

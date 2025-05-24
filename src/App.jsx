@@ -1,9 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import styles from "./App.module.css";
 import { EyeIcon } from "./ShowButton/ShowButton";
+import { Loader } from "./Loader/Loader";
+import { SelectOptions } from "./Select/Select";
 
 const schema = yup.object().shape({
 	email: yup
@@ -40,14 +42,23 @@ function App() {
 		resolver: yupResolver(schema),
 	});
 
+	const [isLoading, setIsLoading] = useState(false);
+
+	useEffect(() => {
+		setIsLoading(true);
+		setTimeout(() => {
+			setIsLoading(false);
+		}, 3000);
+	}, []);
+
 	const submitButtonRef = useRef(null);
 
 	const onSubmit = (data) => {
 		console.log("Форма отправлена:", data);
 		reset();
-		if (submitButtonRef.current) {
-			submitButtonRef.current.blur();
-		}
+		// if (submitButtonRef.current) {
+		// 	submitButtonRef.current.blur();
+		// }
 	};
 
 	const checkAutoFocus = () => {
@@ -60,63 +71,76 @@ function App() {
 
 	return (
 		<div className={styles.container}>
-			<form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-				<input
-					type="email"
-					{...register("email")}
-					placeholder="Почта"
-					className={styles.input}
-					onKeyUp={checkAutoFocus}
-				/>
-				{errors.email && (
-					<span className={styles.error}>{errors.email.message}</span>
-				)}
-				<div className={styles.inputWrapper}>
-					<input
-						type={showPassword ? "text" : "password"}
-						{...register("password")}
-						placeholder="Пароль"
-						className={styles.input}
-						onKeyUp={checkAutoFocus}
-					/>
-					<EyeIcon
-						show={setShowPassword}
-						onClick={() => setShowPassword(!showPassword)}
-					/>
+			{isLoading ? (
+				<Loader />
+			) : (
+				<div>
+					<form
+						className={styles.form}
+						onSubmit={handleSubmit(onSubmit)}
+					>
+						<input
+							type="email"
+							{...register("email")}
+							placeholder="Почта"
+							className={styles.input}
+							onKeyUp={checkAutoFocus}
+						/>
+						{errors.email && (
+							<span className={styles.error}>
+								{errors.email.message}
+							</span>
+						)}
+						<div className={styles.inputWrapper}>
+							<input
+								type={showPassword ? "text" : "password"}
+								{...register("password")}
+								placeholder="Пароль"
+								className={styles.input}
+								onKeyUp={checkAutoFocus}
+							/>
+							<EyeIcon
+								show={setShowPassword}
+								onClick={() => setShowPassword(!showPassword)}
+							/>
+						</div>
+						{errors.password && (
+							<span className={styles.error}>
+								{errors.password.message}
+							</span>
+						)}
+						<div className={styles.inputWrapper}>
+							<input
+								type={showRepeatPass ? "text" : "password"}
+								{...register("repeatPass")}
+								placeholder="Повторить пароль"
+								className={styles.input}
+								onKeyUp={checkAutoFocus}
+							/>
+							<EyeIcon
+								show={showRepeatPass}
+								onClick={() =>
+									setShowRepeatPass(!showRepeatPass)
+								}
+							/>
+						</div>
+						{errors.repeatPass && (
+							<span className={styles.error}>
+								{errors.repeatPass.message}
+							</span>
+						)}
+						<button
+							ref={submitButtonRef}
+							type="submit"
+							className={styles.button}
+							disabled={!isValid}
+						>
+							Зарегистрироваться
+						</button>
+					</form>
+					<SelectOptions />
 				</div>
-				{errors.password && (
-					<span className={styles.error}>
-						{errors.password.message}
-					</span>
-				)}
-				<div className={styles.inputWrapper}>
-					<input
-						type={showRepeatPass ? "text" : "password"}
-						{...register("repeatPass")}
-						placeholder="Повторить пароль"
-						className={styles.input}
-						onKeyUp={checkAutoFocus}
-					/>
-					<EyeIcon
-						show={showRepeatPass}
-						onClick={() => setShowRepeatPass(!showRepeatPass)}
-					/>
-				</div>
-				{errors.repeatPass && (
-					<span className={styles.error}>
-						{errors.repeatPass.message}
-					</span>
-				)}
-
-				<button
-					ref={submitButtonRef}
-					type="submit"
-					className={styles.button}
-					disabled={!isValid}
-				>
-					Зарегистрироваться
-				</button>
-			</form>
+			)}
 		</div>
 	);
 }
